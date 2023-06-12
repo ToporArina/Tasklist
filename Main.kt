@@ -14,6 +14,19 @@ var date = ""
 var time = ""
 
 fun main() {
+//    tasks.add(
+//        TaskList(
+//            "2020-01-01",
+//            "10:10",
+//            "h",
+//            mutableListOf(
+//                "asdf",
+//                "The text foreground and background colors can be defined with certain sequences of characters and digits. To distinguish them from normal text, they are preceded by the nonprintable ASCII escape characters (ASCII character code — 27). To include them in the Kotlin println() printout, you should use its Unicode code, that is \\u001B.",
+//                "wergaw"
+//            )
+//        )
+//    )
+//    print()
     while (true) {
         println("Input an action (add, print, edit, delete, end):")
         when (readln()) {
@@ -63,7 +76,7 @@ fun edit() {
             println("Input the task number (1-${tasks.size}):")
             try {
                 taskNum = readln().toInt()
-            } catch (_:java.lang.Exception) {
+            } catch (_: java.lang.Exception) {
             }
             if (taskNum < 1 || taskNum > tasks.size) {
                 println("Invalid task number")
@@ -173,30 +186,60 @@ fun print() {
     if (tasks.isEmpty()) {
         println("No tasks have been input")
     } else {
+        println(
+            """
+            +----+------------+-------+---+---+--------------------------------------------+
+            | N  |    Date    | Time  | P | D |                   Task                     |
+            +----+------------+-------+---+---+--------------------------------------------+
+        """.trimIndent()
+        )
         for (i in 0 until tasks.size) {
             val taskNumber = i + 1
-            println(
-                String.format(
-                    "%-3s%s %s %s %s",
-                    taskNumber,
-                    tasks[i].date,
-                    tasks[i].time,
-                    tasks[i].priority.uppercase(),
-                    dueTag(tasks[i].date)
-                )
-            )
             for (y in 0 until tasks[i].task.size) {
-                println("   " + tasks[i].task[y])
+                val chunk = tasks[i].task[y].chunked(44)
+                if (y == 0) {
+                    println(
+                        String.format(
+                            "| %s  | %s | %s | %s | %s |%-44s|",
+                            taskNumber,
+                            tasks[i].date,
+                            tasks[i].time,
+                            priority(tasks[i].priority),
+                            dueTag(
+                                tasks[i].date
+                            ), chunk[0]
+                        )
+                    )
+                    if (chunk.size > 1) {
+                        for (line in 1 until chunk.size) {
+                            println(String.format("|    |            |       |   |   |%-44s|", chunk[line]))
+                        }
+                    }
+                } else {
+                    for (line in 0 until chunk.size) {
+                        println(String.format("|    |            |       |   |   |%-44s|", chunk[line]))
+                    }
+
+                }
             }
-            println()
+            println("+----+------------+-------+---+---+--------------------------------------------+")
         }
     }
 }
 
+fun priority(taskPriority: String): String {
+    return when (taskPriority.lowercase()) {
+        "c" -> "\u001B[101m \u001B[0m"
+        "h" -> "\u001B[103m \u001B[0m"
+        "n" -> "\u001B[102m \u001B[0m"
+        "l" -> "\u001B[104m \u001B[0m"
+        else -> ""
+    }
+}
 fun dueTag(taskDate: String): String {
     return when (Clock.System.now().toLocalDateTime(TimeZone.UTC).date.daysUntil(LocalDate.parse(taskDate))) {
-        0 -> "T"
-        in 1..Int.MAX_VALUE -> "I"
-        else -> "O"
+        0 -> "\u001B[103m \u001B[0m" //yellow
+        in 1..Int.MAX_VALUE -> "\u001B[102m \u001B[0m" //green
+        else -> "\u001B[101m \u001B[0m" //red
     }
 }
