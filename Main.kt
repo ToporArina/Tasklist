@@ -1,32 +1,35 @@
 package tasklist
 
 import kotlinx.datetime.*
+import com.squareup.moshi.*
+import java.io.File
+import java.io.FileReader
 import java.time.LocalTime
 import kotlin.system.exitProcess
 
 
 data class TaskList(var date: String, var time: String, var priority: String, var task: MutableList<String>)
 
-val tasks = mutableListOf<TaskList>()
+var tasks = mutableListOf<TaskList>()
 var task = mutableListOf<String>()
 var priority = ""
 var date = ""
 var time = ""
+val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+val type = Types.newParameterizedType(MutableList::class.java, TaskList::class.java)
+val taskListAdapter = moshi.adapter<MutableList<TaskList>>(type)
 
+
+var json = ""
+val jsonFile = File("tasklist.json")
 fun main() {
-//    tasks.add(
-//        TaskList(
-//            "2020-01-01",
-//            "10:10",
-//            "h",
-//            mutableListOf(
-//                "asdf",
-//                "The text foreground and background colors can be defined with certain sequences of characters and digits. To distinguish them from normal text, they are preceded by the nonprintable ASCII escape characters (ASCII character code — 27). To include them in the Kotlin println() printout, you should use its Unicode code, that is \\u001B.",
-//                "wergaw"
-//            )
-//        )
-//    )
-//    print()
+
+    if (!jsonFile.exists()) {
+        jsonFile.createNewFile()
+    } else {
+        tasks = taskListAdapter.fromJson(jsonFile.readText()) as MutableList<TaskList>
+    }
+
     while (true) {
         println("Input an action (add, print, edit, delete, end):")
         when (readln()) {
@@ -36,11 +39,17 @@ fun main() {
             "delete" -> delete()
             "end" -> {
                 println("Tasklist exiting!")
+                endAndSaveToFile()
                 exitProcess(0)
             }
             else -> println("The input action is invalid")
         }
     }
+}
+
+fun endAndSaveToFile() {
+    val json: String = taskListAdapter.toJson(tasks)
+    jsonFile.writeText(json)
 }
 
 fun delete() {
@@ -53,7 +62,7 @@ fun delete() {
             var taskNum = 0
             try {
                 taskNum = readln().toInt()
-            } catch (e: java.lang.Exception) {
+            } catch (_: java.lang.Exception) {
             }
             if (taskNum < 1 || taskNum > tasks.size) {
                 println("Invalid task number")
@@ -159,7 +168,7 @@ fun editTime() {
 
 fun editTask() {
     println("Input a new task (enter a blank line to end):")
-    task = mutableListOf<String>()
+    task = mutableListOf()
     while (true) {
         val userInp = readLine()?.trim()
         if (userInp.isNullOrBlank()) {
@@ -236,6 +245,7 @@ fun priority(taskPriority: String): String {
         else -> ""
     }
 }
+
 fun dueTag(taskDate: String): String {
     return when (Clock.System.now().toLocalDateTime(TimeZone.UTC).date.daysUntil(LocalDate.parse(taskDate))) {
         0 -> "\u001B[103m \u001B[0m" //yellow
